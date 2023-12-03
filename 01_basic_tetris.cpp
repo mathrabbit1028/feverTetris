@@ -328,6 +328,19 @@ void printline(int x1, int y1, int x2, int y2, char c) { // print one line
     }
 }
 
+void printrect(int x1, int y1, int x2, int y2, bool cover=true) {
+    if (x1 > x2) swap(x1, x2);
+    if (y1 > y2) swap(y1, y2);
+    if (cover) printline(x1 + 1, y1, x2 - 1, y1, '-');
+    printline(x1 + 1, y2, x2 - 1, y2, '-');
+    printline(x1, y1 + 1, x1, y2 - 1, '|');
+    printline(x2, y1 + 1, x2, y2 - 1, '|');
+    _wcout(x1, y1, L'\u25A0');
+    _wcout(x1, y2, L'\u25A0');
+    _wcout(x2, y1, L'\u25A0');
+    _wcout(x2, y2, L'\u25A0');
+}
+
 void addghost(int h, int w, int rotation, int type) { // add ghost block
     for (int i = 0; i < 4; i++) {
         ghost[h + block[type][rotation][i][0]][w + block[type][rotation][i][1]] = 1;
@@ -340,7 +353,7 @@ void delghost(int h, int w, int rotation, int type) { // delete ghost block
     }
 }
 
-void printboard() { // print board (with color)
+void printboard() { // print board
 
     // nextblock shape
     const int ch[8][2][4] = {
@@ -355,14 +368,7 @@ void printboard() { // print board (with color)
     };
 
     // hold randering
-    printline(1, 9, 1, 10, '|');
-    printline(6, 9, 6, 10, '|');
-    printline(2, 8, 5, 8, '-');
-    printline(2, 11, 5, 11, '-');
-    _wcout(1, 8, L'\u25A0');
-    _wcout(1, 11, L'\u25A0');
-    _wcout(6, 8, L'\u25A0');
-    _wcout(6, 11, L'\u25A0');
+    printrect(1, 8, 6, 11);
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 4; j++) {
             if (ch[holdblock][i][j] == 1) {
@@ -374,37 +380,22 @@ void printboard() { // print board (with color)
             }
         }
     }
-    
+
     // board randering
-    const int off1 = 8;
-    printline(off1, 9, off1, 28, '|');
-    printline(11 + off1, 9, 11 + off1, 28, '|');
-    printline(1 + off1, 29, 10 + off1, 29, '-');
-    _wcout(off1, 9, L'\u25A0');
-    _wcout(off1, 29, L'\u25A0');
-    _wcout(11 + off1, 9, L'\u25A0');
-    _wcout(11 + off1, 29, L'\u25A0');
+    const int off1 = 7;
+    printrect(off1 + 1, 8, off1 + 12, 28, false);
     for (int i = 27; i >= 0; i--) {
         for (int j = 0; j < 10; j++) {
             //_cout(j + 1 + off1, 28 - i, print[board[i][j]]);
-            if (board[i][j] > 0) _wcout(j + 1 + off1, 28 - i, L'\u25A0');
-            else if (ghost[i][j] == 1) _wcout(j + 1 + off1, 28 - i, L'\u25A1'); 
-            else _cout(j + 1 + off1, 28 - i, ' ');
+            if (board[i][j] > 0) _wcout(j + 2 + off1, 27 - i, L'\u25A0');
+            else if (ghost[i][j] == 1) _wcout(j + 2 + off1, 27 - i, L'\u25A1');
+            else _cout(j + 2 + off1, 27 - i, ' ');
         }
     }
 
     // next randering
     const int off2 = 20;
-
-    printline(off2 + 1, 9, off2 + 1, 22, '|');
-    printline(off2 + 6, 9, off2 + 6, 22, '|');
-    printline(off2 + 2, 8, off2 + 5, 8, '-');
-    printline(off2 + 2, 23, off2 + 5, 23, '-');
-    _wcout(off2 + 1, 8, L'\u25A0');
-    _wcout(off2 + 6, 8, L'\u25A0');
-    _wcout(off2 + 1, 23, L'\u25A0');
-    _wcout(off2 + 6, 23, L'\u25A0');
-
+    printrect(off2 + 1, 8, off2 + 6, 23);
     // get a next nextcount=5 block using deque
     for (int t = 0; t < nextcount; t++) {
         for (int i = 0; i < 2; i++) {
