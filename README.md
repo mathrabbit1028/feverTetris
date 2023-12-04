@@ -6,4 +6,4 @@
 - 02_key_shuffle : key bind shuffle이 포함된 코드
 - 03_board_rotation : board rotation이 포함된 코드
 - 04_small_block : small block이 포함된 코드
-- 05_fever_time : fever_time이 포함된 코드 (최종본)
+- 05_millisecond : 시간 단위가 1초였던 이슈를 해결한 코드
