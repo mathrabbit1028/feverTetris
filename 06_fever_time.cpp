@@ -4,6 +4,8 @@
 #include <random>
 #include <ctime>
 #include <chrono>
+
+#define INITIAL_FEVER 20000
 using namespace std;
 
 // prevent flickering
@@ -115,6 +117,15 @@ const int nextcount = 5; // counts of next block
 int boardrotation = -1;
 wchar_t box = L'\u25A0', gbox = L'\u25A1';
 int fevertypenow = 0;
+int FPS = 30;
+int score = 0;
+int fevergauge = INITIAL_FEVER;
+int totalfevercount = 0;
+long long feverend = gettime() - 999;
+int feverstate = 0;
+int repeat = 1;
+int i;
+long long inittime = gettime();
 
 //const int color[9] = { 15, 9, 6, 4, 2, 1, 6, 13, 8 }; // color of each mino
 //const char print[9] = { ' ', 'I', 'O', 'Z', 'S', 'J', 'L', 'T', 'X' }; // print ASCII char
@@ -370,20 +381,48 @@ void printstr(int h, int w, char* str) {
     }
 }
 
-void printint(int h, int w, int x) {
+void printint(int h, int w, long long x, int k) {
     int length = 0;
-    int xcpy = x;
-    while (xcpy > 0) {
-        length += 1;
-        xcpy /= 10;
+    int i, j;
+    long long xcpy = x;
+    int p = 1;
+    while (k > 0) {
+        p *= 10;
+        k--;
     }
-    int i = 0;
-    int remainder = 0;
-    for (i = length - 1; i >= 0; i--) {
-        remainder = x % 10;
-        x /= 10;
-        _wcout(w + i, h, '0' + remainder);
+    if (x > p) {
+        if (!x) _wcout(w, h, '0');
+        while (xcpy > 0) {
+            length += 1;
+            xcpy /= 10;
+        }
+        int i = 0;
+        int remainder = 0;
+        for (i = 0; i < length + 3; i++) {
+            _wcout(w + i, h, ' ');
+        }
+        for (i = length - 1; i >= 0; i--) {
+            remainder = x % 10;
+            x /= 10;
+            _wcout(w + i, h, '0' + remainder);
+        }
     }
+    else if (x != 0) {
+        while (xcpy > 0) {
+            length += 1;
+            xcpy /= 10;
+        }
+        for (i = p / 10, j = 0; i > 0; i /= 10, j++) {
+            _wcout(w + j, h, '0' + (x / i));
+            x %= i;
+        }
+    }
+    else {
+        for (i = p / 10, j = 0; i > 0; i /= 10, j++) {
+            _wcout(w + j, h, '0');
+        }
+    }
+
 }
 
 void printline(int x1, int y1, int x2, int y2, char c, bool rotated = false) { // print one line
@@ -436,7 +475,7 @@ void clearwindow() {
 void printboard() { // print board (without color)
 
     if (boardrotation >= 0) clearwindow(); // if board rotation is activated
-
+    
     // nextblock shape
     const int ch[8][2][4] = {
         { {0, 0, 0, 0}, {0, 0, 0, 0} },
@@ -501,24 +540,48 @@ void printboard() { // print board (without color)
     // right box
     const int off3 = 30;
     printrect(off3 + 1, 8, off3 + 19, 28);
+    for (int i = off3 + 2; i <= off3 + 18; i++) _cout(i, 10, ' ');
 
     int tmp = 0; // check type of key shuffle
     for (int i = 0; i < 7; i++) {
         if (key[i] == 0) { // if key prevented
-            for (int j = 0; j < 5; j++) _cout(off3 + 7 + j, 11, keyname[i][j]);
-            _cout(off3 + 13, 11, 'X');
+            for (int j = 0; j < 5; j++) _cout(off3 + 7 + j, 10, keyname[i][j]);
+            _cout(off3 + 13, 10, 'X');
             break;
         }
         else if (key[i] != i + 1) {
-            for (int j = 0; j < 5; j++) _cout(off3 + 3 + j + tmp, 11, keyname[i][j]);
+            for (int j = 0; j < 5; j++) _cout(off3 + 3 + j + tmp, 10, keyname[i][j]);
             tmp = 10; // make offset of second
         }
     }
     if (tmp == 10) { // key swap
-        _cout(off3 + 9, 11, '<');
-        _cout(off3 + 10, 11, '-');
-        _cout(off3 + 11, 11, '>');
+        _cout(off3 + 9, 10, '<');
+        _cout(off3 + 10, 10, '-');
+        _cout(off3 + 11, 10, '>');
     }
+    if (boardrotation >= 0) { // rander string of board rotation event
+        printstr(10, 33, (char*)"board rotation!");
+    }
+    if (box == L'\u00B7') { // rander string of blind event
+        printstr(10, 35, (char*)"blind event!");
+    }
+
+    printstr(12, 32, (char*)"-----------------");
+    printstr(14, 33, (char*)"Score | ");
+    printint(14, 41, score, 7);
+    printstr(18, 33, (char*)"Time  | ");
+    printint(18, 41, ((gettime() - inittime) / 1000) / 60, 2);
+    printstr(18, 43, (char*)" : ");
+    printint(18, 46, ((gettime() - inittime) / 1000) % 60, 2);
+    printstr(22, 33, (char*)"Fever | ");
+    for (i = 0; i < 7; i++) {
+        _wcout(41 + i, 22, L'\u25A1');
+    }
+    for (i = 0; ((i / 7.0) * INITIAL_FEVER < (INITIAL_FEVER - fevergauge)) && (i < 7); i++) {
+        _wcout(41 + i, 22, L'\u25A0');
+    }
+    printstr(26, 33, (char*)"Level | ");
+    printint(26, 41, 1 + (totalfevercount / 5), 2);
 
 }
 
@@ -691,7 +754,7 @@ blockinfo keybind(int h, int w, int rotation, int type) {
         // get input key
         nKey = _getch();
 
-        if (nKey == keylist[key[0]]) { // press up
+        if (nKey == keylist[key[0]]) { // press X
             ret = clockwise(h, w, rotation, type);
             if (boardrotation >= 0) {
                 boardrotation = (boardrotation + 1) % 4;
@@ -715,7 +778,7 @@ blockinfo keybind(int h, int w, int rotation, int type) {
             timer = gettime();
             isharddrop = true;
         }
-        else if (nKey == keylist[key[5]]) { // press X
+        else if (nKey == keylist[key[5]]) { // press Z
             ret = counterclockwise(h, w, rotation, type);
             if (boardrotation >= 0) boardrotation = (boardrotation + 3) % 4;
             timer = gettime();
@@ -737,6 +800,10 @@ void setrotate() {
 }
 
 void resetrotate() {
+    clearwindow();
+    doubleConsole::BufferFlip();
+    clearwindow();
+    doubleConsole::BufferFlip();
     boardrotation = -1; // nagative value means rotate is not activated
 }
 
@@ -783,8 +850,8 @@ int fevercalculate(int fevergauge) {
     return fevergauge - decreasecount;
 }
 
-int feveractivate(int fevercount) {
-    int feverlength = 5 * (fevercount % 3) + 2.5 * (fevercount / 3);
+long long feveractivate(int fevercount) {
+    int feverlength = 5000 * (fevercount % 3) + 2500 * (fevercount / 3) + 10000;
     int fevertype = generator() % 3;
     switch (fevertype) {
     case 0:
@@ -798,17 +865,17 @@ int feveractivate(int fevercount) {
         break;
     }
     fevertypenow = fevertype;
-    return time(NULL) + feverlength;
+    return gettime() + feverlength;
 }
 
 /*
          <key binding>
     왼쪽 화살표 : 왼쪽 이동
     오른쪽 화살표 : 오른쪽 이동
-    위쪽 화살표 : 시계 방향 회전
+    X 키 : 시계 방향 회전
     아래쪽 화살표 : softdrop
     스페이스 바 : harddrop
-    X 키 : 반시계 방향 회전
+    Z 키 : 반시계 방향 회전
     C 키 : hold
 */
 
@@ -817,15 +884,9 @@ int main() {
     doubleConsole::InitGame(); // make double-buffer console
 
     boardclear(); // board initalization
+    getnextblock(); // make list of block
     resetkey(); // reset keybind
     resetrotate(); // reset boardrotation
-    //makesmall(); // make large block size
-
-    int FPS = 100;
-    int fevergauge = 500;
-    int totalfevercount = 0;
-    int feverend = time(NULL) - 99999999;
-    int feverstate = 0;
 
     while (true) {
 
@@ -842,20 +903,23 @@ int main() {
 
             dispawn(info.h, info.w, info.rotation, info.type); // hide before block
 
-            if (gettime() - softtimer > 500) { // gravity
+            if (gettime() - softtimer > max(0, 500 - 10 * totalfevercount)) { // gravity
                 info = softdrop(info.h, info.w, info.rotation, info.type);
                 softtimer = gettime();
             }
 
-            if (((gettime() - fevertimer) > 1000 / FPS) && feverend < time(NULL)) {
-                fevergauge = fevercalculate(fevergauge);
+            if (((gettime() - fevertimer) > 1000 / FPS) && (feverend < gettime()) && !feverstate) {
+                for (i = 0; i < repeat; i++) {
+                    fevergauge = fevercalculate(fevergauge);
+                }
                 if (fevergauge <= 0) {
                     feverend = feveractivate(totalfevercount++);
+                    feverstate = 1;
                 }
                 fevertimer = gettime();
             }
-
-            if (feverstate && feverend <= time(NULL)) {
+            score += 1 + feverstate + (totalfevercount / 5);
+            if (feverstate && (feverend < gettime())) {
                 switch (fevertypenow) {
                 case 0:
                     resetrotate();
@@ -867,12 +931,14 @@ int main() {
                     makelarge();
                     break;
                 }
-                fevergauge = 500;
+                fevergauge = INITIAL_FEVER;
                 feverstate = 0;
+                if (totalfevercount % 5 == 0) repeat += 1;
+
             }
 
             if (hit(info.h - 1, info.w, info.rotation, info.type)) { // if hit a floor
-                if (gettime() - timer > 1000) break;
+                if (gettime() - timer > max(0, 500 - 10 * totalfevercount)) break;
                 if (isharddrop) break;
             }
             info = keybind(info.h, info.w, info.rotation, info.type); // result pos by keyboard input
@@ -882,10 +948,6 @@ int main() {
             summon(info.h, info.w, info.rotation, info.type); // show now block
 
             printboard(); // randering
-            printint(10, 40, fevergauge); // 피버 게이지
-            printint(12, 40, feverend); // 피버가 끝나는 시간 time.t(s)
-            printint(14, 40, gettime()); // 현재시간
-            printint(16, 40, fevertimer); // 피버 갱신 시간
             delghost(ghost.h, ghost.w, ghost.rotation, ghost.type); // delete ghost
         }
 
